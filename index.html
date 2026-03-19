@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LXI — Institutional Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#070910; --bg2:#0c0f18; --bg3:#111520; --bg4:#161c28;
+  --border:#1a2035; --border2:#222d42;
+  --text:#dde6f5; --text2:#6e7f9c; --text3:#3a4a60;
+  --accent:#00d4aa; --accent-dim:rgba(0,212,170,0.1);
+  --blue:#3b82f6; --blue-dim:rgba(59,130,246,0.1);
+  --red:#ff3b5c; --red-dim:rgba(255,59,92,0.1);
+  --gold:#f5a623; --gold-dim:rgba(245,166,35,0.1);
+  --radius:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;gap:24px;position:sticky;top:0;z-index:200}
+.logo-block{display:flex;flex-direction:column;gap:1px}
+.logo{font-size:22px;font-weight:800;letter-spacing:5px;color:var(--accent);line-height:1}
+.logo-sub{font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase}
+.search-row{display:flex;gap:8px;flex:1;max-width:460px}
+.search-row input{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;padding:9px 14px;border-radius:var(--radius);text-transform:uppercase;outline:none;transition:border-color .2s,box-shadow .2s;letter-spacing:2px}
+.search-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.search-row input::placeholder{color:var(--text3);text-transform:none;letter-spacing:0;font-weight:400}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.status-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:6px 14px;border-radius:var(--radius)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:var(--radius);border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-accent{background:var(--accent);color:#000}.btn-accent:hover{background:#00ebb9;transform:translateY(-1px)}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--bg4);color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+.tabbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex}
+.tab{padding:14px 24px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.company-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:20px 28px;align-items:center;gap:24px;display:none}
+.company-header.visible{display:flex}
+.company-name{font-size:22px;font-weight:700}
+.company-ticker{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);font-weight:600;letter-spacing:2px}
+.company-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.price-block{margin-left:auto;text-align:right}
+.price-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600}
+.header-stats{display:flex;gap:32px}
+.hstat{display:flex;flex-direction:column;gap:2px}
+.hstat-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3)}
+.hstat-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500}
+
+.main{padding:28px;max-width:1400px;margin:0 auto}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px}
+.card-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;display:block}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.col-span-2{grid-column:span 2}
+
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:9px 12px;border-radius:6px;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+.input-group{display:flex;align-items:center}
+.input-suffix{background:var(--bg4);border:1px solid var(--border2);border-left:none;padding:9px 12px;border-radius:0 6px 6px 0;font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.input-group .form-input{border-radius:6px 0 0 6px}
+
+.metric-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px}
+.metric-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
+.metric-sub{font-size:11px;color:var(--text2);margin-top:4px}
+
+.dcf-result-big{text-align:center;padding:32px 24px;background:linear-gradient(135deg,var(--bg3),var(--bg4));border:1px solid var(--border2);border-radius:12px}
+.dcf-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:12px}
+.dcf-price{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;line-height:1}
+.dcf-price.undervalued{color:var(--accent)}.dcf-price.overvalued{color:var(--red)}
+.dcf-upside{font-size:18px;font-weight:700;margin-top:12px}
+.dcf-upside.pos{color:var(--accent)}.dcf-upside.neg{color:var(--red)}
+.dcf-margin-safety{margin-top:16px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;display:inline-block}
+
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:10px 14px;text-align:right;border-bottom:1px solid var(--border)}
+.data-table th:first-child{text-align:left}
+.data-table td{padding:11px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right;border-bottom:1px solid var(--border);color:var(--text2)}
+.data-table td:first-child{text-align:left;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500}
+.data-table tr:last-child td{border-bottom:none}.data-table tr:hover td{background:var(--bg3)}
+
+.ratio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.ratio-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.ratio-name{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px}
+.ratio-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600}
+.ratio-bench{font-size:10px;color:var(--text3);margin-top:4px}
+
+.chart-wrap{position:relative;height:260px}
+
+.sens-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px}
+.sens-table th,.sens-table td{padding:8px 10px;text-align:center;border:1px solid var(--border)}
+.sens-table th{background:var(--bg3);color:var(--text2);font-size:10px;letter-spacing:1px}
+.sens-cell-high{background:rgba(0,212,170,0.15);color:var(--accent)}
+.sens-cell-mid{background:rgba(245,166,35,0.1);color:var(--gold)}
+.sens-cell-low{background:rgba(255,59,92,0.12);color:var(--red)}
+
+.ai-panel{background:linear-gradient(135deg,rgba(0,212,170,0.03),rgba(59,130,246,0.03));border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:20px}
+.ai-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.ai-badge{background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;font-size:9px;font-weight:800;letter-spacing:2px;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+.ai-title{font-size:13px;font-weight:600;color:var(--text2)}
+.ai-content{font-size:14px;line-height:1.75;color:var(--text)}
+.ai-content p{margin-bottom:12px}.ai-content p:last-child{margin-bottom:0}
+.ai-loading{display:flex;align-items:center;gap:12px;color:var(--text2);font-size:13px}
+.ai-spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:80px 40px}
+.empty-icon{font-size:48px;margin-bottom:20px;opacity:.4}
+.empty-title{font-size:22px;font-weight:700;margin-bottom:10px}
+.empty-sub{font-size:14px;color:var(--text2);max-width:420px;margin:0 auto 28px;line-height:1.6}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(7,9,16,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(6px);display:none}
+.loading-overlay.open{display:flex}
+.loading-spinner-big{width:48px;height:48px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px}
+.loading-msg{font-size:14px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.loading-step{font-size:12px;color:var(--text3)}
+
+.tvm-calc{background:linear-gradient(160deg,#0c1220,#0e1628);border:1px solid #1e2d45;border-radius:16px;padding:32px;max-width:640px;margin:0 auto}
+.tvm-inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.tvm-field{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s}
+.tvm-field:hover{border-color:var(--blue)}.tvm-field.solving{border-color:var(--gold);background:var(--gold-dim)}
+.tvm-field-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tvm-key{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text2)}
+.tvm-solve-badge{font-size:9px;text-transform:uppercase;letter-spacing:1px;background:var(--gold-dim);color:var(--gold);padding:2px 6px;border-radius:4px;display:none}
+.tvm-field.solving .tvm-solve-badge{display:block}
+.tvm-input-row{display:flex;align-items:center;gap:8px}
+.tvm-inp{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;width:100%}
+.tvm-inp::placeholder{color:var(--text3);font-size:18px}
+.tvm-unit{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.tvm-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.tvm-result-bar{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:18px 24px;margin-top:20px;display:none;align-items:center;gap:16px}
+.tvm-result-bar.visible{display:flex}
+.tvm-result-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2)}
+.tvm-result-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent);margin-left:auto}
+.tvm-templates{margin-top:28px}
+.tvm-templates-title{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;text-align:center}
+.tvm-template-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tvm-template-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:6px 14px;font-size:11px;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500;transition:all .15s}
+.tvm-template-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--blue)}
+
+.notif{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px 20px;font-size:13px;color:var(--text);box-shadow:0 10px 40px rgba(0,0,0,.4);z-index:500;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px}
+.notif.show{transform:translateY(0);opacity:1}.notif.success{border-left:3px solid var(--accent)}.notif.error{border-left:3px solid var(--red)}
+
+@media(max-width:900px){
+  .grid-2,.grid-4{grid-template-columns:1fr}
+  .col-span-2{grid-column:span 1}
+  .header-stats{display:none}
+  .tvm-inputs{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner-big"></div>
+  <div class="loading-msg" id="loadingMsg">Connecting to SEC EDGAR...</div>
+  <div class="loading-step" id="loadingStep">Please wait</div>
+</div>
+
+<div class="topbar">
+  <div class="logo-block">
+    <div class="logo">LXI</div>
+    <div class="logo-sub">Institutional Analysis</div>
+  </div>
+  <div class="search-row">
+    <input type="text" id="tickerInput" placeholder="Enter ticker — AAPL, NVDA, MSFT...">
+    <button class="btn btn-accent" onclick="loadTicker()">Analyze</button>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill"><div class="status-dot"></div><span>SEC EDGAR · No API Key Required</span></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tab active" onclick="switchTab('dcf',this)">📊 DCF Model</div>
+  <div class="tab" onclick="switchTab('fundamentals',this)">📋 Fundamentals</div>
+  <div class="tab" onclick="switchTab('technical',this)">📈 Technical</div>
+  <div class="tab" onclick="switchTab('tvm',this)">🧮 TVM Calculator</div>
+</div>
+
+<div class="company-header" id="companyHeader">
+  <div>
+    <div class="company-name" id="companyName">—</div>
+    <div class="company-ticker" id="companyTicker">—</div>
+    <div class="company-meta" id="companyMeta">—</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="hstat-label">Revenue</div><div class="hstat-val" id="hRevenue">—</div></div>
+    <div class="hstat"><div class="hstat-label">Net Income</div><div class="hstat-val" id="hNetIncome">—</div></div>
+    <div class="hstat"><div class="hstat-label">Free Cash Flow</div><div class="hstat-val" id="hFCF">—</div></div>
+    <div class="hstat"><div class="hstat-label">Net Debt</div><div class="hstat-val" id="hNetDebt">—</div></div>
+    <div class="hstat"><div class="hstat-label">Shares Out.</div><div class="hstat-val" id="hShares">—</div></div>
+  </div>
+  <div class="price-block">
+    <div class="price-val" id="currentPriceDisplay">—</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:4px;">Yahoo Finance</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- DCF TAB -->
+  <div class="tab-panel active" id="panel-dcf">
+    <div id="dcf-empty" class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">Enter a Ticker to Begin</div>
+      <div class="empty-sub">LXI pulls directly from SEC EDGAR 10-K filings. Government-sourced data, no API key required.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="quickLoad('AAPL')">Try AAPL</button>
+        <button class="btn btn-ghost" onclick="quickLoad('NVDA')">Try NVDA</button>
+        <button class="btn btn-ghost" onclick="quickLoad('MSFT')">Try MSFT</button>
+        <button class="btn btn-ghost" onclick="quickLoad('V')">Try V</button>
+      </div>
+    </div>
+    <div id="dcf-content" style="display:none">
+
+      <div class="card" style="margin-bottom:20px;border-color:var(--border2)">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px">Current Market Price</div>
+            <div style="font-size:12px;color:var(--text2)">Auto-fetched. Override if needed before running DCF.</div>
+          </div>
+          <div class="input-group" style="max-width:200px">
+            <div class="input-suffix" style="border-left:1px solid var(--border2);border-right:none;border-radius:6px 0 0 6px">$</div>
+            <input class="form-input" type="number" id="currentPriceInput" placeholder="0.00" step="0.01" style="border-radius:0 6px 6px 0" oninput="S.currentPrice=parseFloat(this.value)||null">
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px">
+            <span style="color:var(--accent)">●</span> Data: SEC EDGAR 10-K Filings + Yahoo Finance
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:24px;align-items:start">
+        <div>
+          <div class="card">
+            <div class="card-title">Revenue Growth Assumptions</div>
+            <div class="grid-2" style="gap:12px">
+              <div class="form-group"><label class="form-label">Year 1 Growth</label><div class="input-group"><input class="form-input" type="number" id="g1" value="12"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Year 2 Growth</label><div class="input-group"><input class="form-input" type="number" id="g2" value="10"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Year 3 Growth</label><div class="input-group"><input class="form-input" type="number" id="g3" value="8"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Year 4 Growth</label><div class="input-group"><input class="form-input" type="number" id="g4" value="7"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Year 5 Growth</label><div class="input-group"><input class="form-input" type="number" id="g5" value="6"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Terminal Growth</label><div class="input-group"><input class="form-input" type="number" id="tg" value="2.5" step="0.1"><div class="input-suffix">%</div></div></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-title">Margin & Rate Assumptions</div>
+            <div class="grid-2" style="gap:12px">
+              <div class="form-group"><label class="form-label">EBIT Margin</label><div class="input-group"><input class="form-input" type="number" id="ebitMargin" value="25" step="0.5"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">Tax Rate</label><div class="input-group"><input class="form-input" type="number" id="taxRate" value="21" step="0.5"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">D&A (% Rev)</label><div class="input-group"><input class="form-input" type="number" id="daPercent" value="5" step="0.5"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">CapEx (% Rev)</label><div class="input-group"><input class="form-input" type="number" id="capexPercent" value="6" step="0.5"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">WACC</label><div class="input-group"><input class="form-input" type="number" id="wacc" value="10" step="0.25"><div class="input-suffix">%</div></div></div>
+              <div class="form-group"><label class="form-label">NWC Change % Rev</label><div class="input-group"><input class="form-input" type="number" id="nwcPercent" value="1" step="0.5"><div class="input-suffix">%</div></div></div>
+            </div>
+            <button class="btn btn-accent" style="width:100%;margin-top:8px" onclick="runDCF()">Run DCF Model</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="dcf-result-big">
+            <div class="dcf-label">Intrinsic Value Per Share</div>
+            <div class="dcf-price" id="dcfPrice">—</div>
+            <div class="dcf-upside" id="dcfUpside">Run model to see valuation</div>
+            <div class="dcf-margin-safety" id="dcfMargin"></div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-title">Free Cash Flow Projections ($B)</div>
+            <div class="chart-wrap"><canvas id="fcfChart"></canvas></div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-title">DCF Breakdown</div>
+            <table class="data-table">
+              <thead><tr><th>Year</th><th>Revenue</th><th>EBIT</th><th>FCFF</th><th>PV(FCFF)</th></tr></thead>
+              <tbody id="dcfTableBody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Run model to see projections</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-title">Sensitivity — WACC vs Terminal Growth</div>
+            <div style="overflow-x:auto"><div id="sensTableWrap"><p style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Run model to see sensitivity</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-panel" id="aiPanel" style="display:none">
+        <div class="ai-header">
+          <div class="ai-badge">AI Analyst</div>
+          <div class="ai-title">Deep Analysis — LXI Intelligence</div>
+          <button class="btn btn-ghost btn-sm" onclick="runAIAnalysis()" style="margin-left:auto">Refresh</button>
+        </div>
+        <div class="ai-content" id="aiContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUNDAMENTALS TAB -->
+  <div class="tab-panel" id="panel-fundamentals">
+    <div id="fund-empty" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No Data Loaded</div>
+      <div class="empty-sub">Search a ticker above to load SEC EDGAR fundamental data.</div>
+    </div>
+    <div id="fund-content" style="display:none">
+      <div class="grid-4" style="margin-bottom:20px">
+        <div class="metric-card"><div class="metric-label">Revenue (Latest)</div><div class="metric-val" id="fRevenue">—</div><div class="metric-sub" id="fRevGrowth">—</div></div>
+        <div class="metric-card"><div class="metric-label">Net Income</div><div class="metric-val" id="fNetIncome">—</div><div class="metric-sub" id="fNetMargin">—</div></div>
+        <div class="metric-card"><div class="metric-label">Free Cash Flow</div><div class="metric-val" id="fFCF">—</div><div class="metric-sub" id="fFCFYield">—</div></div>
+        <div class="metric-card"><div class="metric-label">Gross Margin</div><div class="metric-val" id="fGM">—</div><div class="metric-sub" id="fOM">—</div></div>
+      </div>
+      <div class="grid-2" style="gap:20px">
+        <div class="card"><div class="card-title">Valuation & Returns</div><div class="ratio-grid" id="valRatios"></div></div>
+        <div class="card"><div class="card-title">Margin Profile</div><div class="ratio-grid" id="marginRatios"></div></div>
+        <div class="card col-span-2">
+          <div class="card-title">Revenue & Net Income Trend (Annual 10-K)</div>
+          <div class="chart-wrap"><canvas id="incomeChart"></canvas></div>
+        </div>
+        <div class="card col-span-2">
+          <div class="card-title">Annual Financials — SEC 10-K Filings</div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Metric</th><th id="yr1h">—</th><th id="yr2h">—</th><th id="yr3h">—</th><th id="yr4h">—</th></tr></thead>
+              <tbody id="incomeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECHNICAL TAB -->
+  <div class="tab-panel" id="panel-technical">
+    <div id="tech-empty" class="empty-state">
+      <div class="empty-icon">📈</div>
+      <div class="empty-title">No Chart Loaded</div>
+      <div class="empty-sub">Search a ticker above to load price data from Yahoo Finance.</div>
+    </div>
+    <div id="tech-content" style="display:none">
+      <div class="grid-4" style="margin-bottom:20px">
+        <div class="metric-card"><div class="metric-label">Current Price</div><div class="metric-val" id="tPrice">—</div></div>
+        <div class="metric-card"><div class="metric-label">50-Day MA</div><div class="metric-val" id="t50ma">—</div><div class="metric-sub" id="t50maStatus">—</div></div>
+        <div class="metric-card"><div class="metric-label">200-Day MA</div><div class="metric-val" id="t200ma">—</div><div class="metric-sub" id="t200maStatus">—</div></div>
+        <div class="metric-card"><div class="metric-label">RSI (14)</div><div class="metric-val" id="tRSI">—</div><div class="metric-sub" id="tRSIStatus">—</div></div>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title" style="justify-content:space-between;display:flex;align-items:center">
+          <span style="display:flex;align-items:center;gap:8px"><span style="width:3px;height:14px;background:var(--accent);border-radius:2px;display:block"></span>Price Chart — 1 Year</span>
+          <div style="display:flex;gap:16px;font-size:11px"><span style="color:var(--accent)">— Price</span><span style="color:rgba(59,130,246,0.8)">— 50 MA</span><span style="color:rgba(245,166,35,0.8)">— 200 MA</span></div>
+        </div>
+        <div class="chart-wrap" style="height:320px"><canvas id="priceChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">RSI (14) — Overbought >70 · Oversold &lt;30</div>
+        <div class="chart-wrap" style="height:140px"><canvas id="rsiChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TVM TAB -->
+  <div class="tab-panel" id="panel-tvm">
+    <div style="max-width:760px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:28px;font-weight:800;margin-bottom:8px">TVM Calculator</div>
+        <div style="font-size:14px;color:var(--text2)">Time Value of Money — Solve for any variable. Click a field first to mark it as the unknown.</div>
+      </div>
+      <div class="tvm-calc">
+        <div class="tvm-inputs">
+          <div class="tvm-field" id="field-n" onclick="setSolve('n')">
+            <div class="tvm-field-top"><div class="tvm-key">N</div><div class="tvm-solve-badge">Solving</div></div>
+            <div class="tvm-input-row"><input class="tvm-inp" id="inp-n" type="number" placeholder="—" oninput="clearSolveIfInput('n')"><div class="tvm-unit">periods</div></div>
+          </div>
+          <div class="tvm-field" id="field-iy" onclick="setSolve('iy')">
+            <div class="tvm-field-top"><div class="tvm-key">I/Y</div><div class="tvm-solve-badge">Solving</div></div>
+            <div class="tvm-input-row"><input class="tvm-inp" id="inp-iy" type="number" placeholder="—" oninput="clearSolveIfInput('iy')"><div class="tvm-unit">% / period</div></div>
+          </div>
+          <div class="tvm-field" id="field-pv" onclick="setSolve('pv')">
+            <div class="tvm-field-top"><div class="tvm-key">PV</div><div class="tvm-solve-badge">Solving</div></div>
+            <div class="tvm-input-row"><input class="tvm-inp" id="inp-pv" type="number" placeholder="—" oninput="clearSolveIfInput('pv')"><div class="tvm-unit">$</div></div>
+          </div>
+          <div class="tvm-field" id="field-pmt" onclick="setSolve('pmt')">
+            <div class="tvm-field-top"><div class="tvm-key">PMT</div><div class="tvm-solve-badge">Solving</div></div>
+            <div class="tvm-input-row"><input class="tvm-inp" id="inp-pmt" type="number" placeholder="—" oninput="clearSolveIfInput('pmt')"><div class="tvm-unit">$</div></div>
+          </div>
+          <div class="tvm-field" id="field-fv" onclick="setSolve('fv')" style="grid-column:span 2">
+            <div class="tvm-field-top"><div class="tvm-key">FV</div><div class="tvm-solve-badge">Solving</div></div>
+            <div class="tvm-input-row"><input class="tvm-inp" id="inp-fv" type="number" placeholder="—" oninput="clearSolveIfInput('fv')"><div class="tvm-unit">$</div></div>
+          </div>
+        </div>
+        <div class="tvm-actions">
+          <button class="btn btn-accent" onclick="solveTVM()">Calculate</button>
+          <button class="btn btn-ghost" onclick="clearTVM()">Clear All</button>
+        </div>
+        <div class="tvm-result-bar" id="tvmResultBar">
+          <div><div class="tvm-result-label" id="tvmResultLabel">Result</div><div style="font-size:11px;color:var(--text3);margin-top:3px" id="tvmResultDesc">—</div></div>
+          <div class="tvm-result-val" id="tvmResultVal">—</div>
+        </div>
+        <div class="tvm-templates">
+          <div class="tvm-templates-title">Quick Templates</div>
+          <div class="tvm-template-btns">
+            <div class="tvm-template-btn" onclick="loadTemplate('loan')">Auto Loan</div>
+            <div class="tvm-template-btn" onclick="loadTemplate('mortgage')">Mortgage</div>
+            <div class="tvm-template-btn" onclick="loadTemplate('retirement')">Retirement</div>
+            <div class="tvm-template-btn" onclick="loadTemplate('college')">College Fund</div>
+            <div class="tvm-template-btn" onclick="loadTemplate('bond')">Bond Price</div>
+            <div class="tvm-template-btn" onclick="loadTemplate('lumpsum')">Lump Sum</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-panel" style="margin-top:24px">
+        <div class="ai-header"><div class="ai-badge">AI Analyst</div><div class="ai-title">LXI will explain your TVM result after calculation</div></div>
+        <div class="ai-content" id="tvmAiContent" style="color:var(--text2);font-size:13px">Run a calculation above and LXI will explain the result and what it means for your financial decision.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="notif" id="notif"></div>
+
+<!-- DEBUG LOG -->
+<div id="debugPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#070910;border-top:1px solid #1a2035;z-index:400;padding:12px 24px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#3a4a60;">Debug Log</div>
+    <button onclick="document.getElementById('debugPanel').style.display='none'" style="background:none;border:none;color:#3a4a60;cursor:pointer;font-size:18px;">×</button>
+  </div>
+  <div id="debugLog" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e7f9c;max-height:120px;overflow-y:auto;line-height:1.8;"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const S={ticker:'',cik:'',entityName:'',facts:null,annualData:null,currentPrice:null,historicalPrices:[],shares:null,netDebt:null,baseRevenue:null};
+let fcfC=null,incC=null,priceC=null,rsiC=null;
+const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0c0f18',borderColor:'#1a2035',borderWidth:1,titleColor:'#dde6f5',bodyColor:'#6e7f9c',padding:10}},scales:{x:{grid:{color:'rgba(26,32,53,0.6)'},ticks:{color:'#3a4a60',font:{family:'JetBrains Mono',size:10},maxTicksLimit:8}},y:{grid:{color:'rgba(26,32,53,0.6)'},ticks:{color:'#3a4a60',font:{family:'JetBrains Mono',size:10}}}}};
+
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById('panel-'+name).classList.add('active')}
+
+// ══════════════════════════════════════════════
+// EDGAR HELPERS
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// LOCAL PROXY — routes through server.py
+// ══════════════════════════════════════════════
+async function proxyFetch(url){
+  dbgLog('Fetching: '+url.substring(0,80)+'...');
+  // Use local Python server proxy
+  const localProxy = `/proxy?url=${encodeURIComponent(url)}`;
+  try{
+    dbgLog('Sending to local proxy...');
+    const r = await fetch(localProxy);
+    if(r.ok){ dbgLog('Local proxy succeeded ✓'); return r; }
+    dbgLog('Local proxy returned: '+r.status);
+    throw new Error('Proxy returned '+r.status);
+  }catch(e){
+    dbgLog('Local proxy error: '+e.message);
+    throw new Error('Could not reach local proxy. Is server.py running? Detail: '+e.message);
+  }
+}
+
+function dbgLog(msg){
+  const el=document.getElementById('debugLog');
+  if(!el)return;
+  const line=document.createElement('div');
+  line.textContent='['+(new Date().toLocaleTimeString())+'] '+msg;
+  el.appendChild(line);
+  el.scrollTop=el.scrollHeight;
+}
+
+async function resolveCIK(ticker){
+  const r=await proxyFetch('https://www.sec.gov/files/company_tickers.json');
+  const data=await r.json();
+  const up=ticker.toUpperCase();
+  for(const k of Object.keys(data)){if(data[k].ticker===up)return{cik:String(data[k].cik_str).padStart(10,'0'),name:data[k].title}}
+  throw new Error(`${ticker} not found in SEC EDGAR`)
+}
+
+async function fetchFacts(cik){
+  const r=await proxyFetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`);
+  if(!r.ok)throw new Error('EDGAR companyfacts fetch failed');
+  return r.json()
+}
+
+function getAnnual(facts,...names){
+  const gaap=facts.facts?.['us-gaap']||{};
+  for(const name of names){
+    const c=gaap[name];if(!c)continue;
+    const units=c.units?.USD||c.units?.shares||c.units?.pure;if(!units)continue;
+    const annual=units.filter(d=>d.form==='10-K'&&d.val!==undefined);
+    if(!annual.length)continue;
+    const byEnd={};
+    for(const d of annual){if(!byEnd[d.end]||d.filed>byEnd[d.end].filed)byEnd[d.end]=d}
+    const sorted=Object.values(byEnd).sort((a,b)=>b.end.localeCompare(a.end)).slice(0,5);
+    if(sorted.length)return sorted
+  }
+  return[]
+}
+
+async function fetchPrice(ticker){
+  try{
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1y`;
+    const r=await proxyFetch(url);const data=await r.json();
+    const result=data.chart?.result?.[0];if(!result)return{price:null,history:[]};
+    const ts=result.timestamp||[];
+    const closes=result.indicators?.quote?.[0]?.close||[];
+    const history=ts.map((t,i)=>({date:new Date(t*1000).toISOString().split('T')[0],close:closes[i]})).filter(d=>d.close!=null);
+    return{price:history.length?history[history.length-1].close:null,history}
+  }catch(e){return{price:null,history:[]}}
+}
+
+// ══════════════════════════════════════════════
+// LOAD TICKER
+// ══════════════════════════════════════════════
+async function loadTicker(){
+  const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
+  if(!ticker){notify('Enter a ticker symbol','error');return}
+  S.ticker=ticker;
+
+  // Step 1 — CIK resolution
+  document.getElementById('debugPanel').style.display='block';document.getElementById('debugLog').innerHTML='';
+  showLoading('Step 1 of 3 — Resolving ticker in SEC EDGAR...','Connecting to sec.gov/files/company_tickers.json');
+  let cik, name;
+  try{
+    const res=await resolveCIK(ticker);
+    cik=res.cik; name=res.name;
+    S.cik=cik; S.entityName=name;
+  }catch(e){
+    hideLoading();
+    console.error('Step 1 failed:',e);
+    notify('Step 1 failed — Could not resolve ticker "'+ticker+'" from SEC EDGAR. Check spelling. Detail: '+e.message,'error');
+    return;
+  }
+
+  // Step 2 — Company facts
+  setLoadStep('Step 2 of 3 — Downloading XBRL financials from SEC EDGAR...','This may take 10-20s for large companies (file is 5-10MB)');
+  try{
+    S.facts=await fetchFacts(cik);
+  }catch(e){
+    hideLoading();
+    console.error('Step 2 failed:',e);
+    notify('Step 2 failed — Could not download EDGAR company facts. Detail: '+e.message,'error');
+    return;
+  }
+
+  // Step 3 — Price history
+  setLoadStep('Step 3 of 3 — Fetching price history from Yahoo Finance...','');
+  try{
+    const{price,history}=await fetchPrice(ticker);
+    S.currentPrice=price; S.historicalPrices=history;
+  }catch(e){
+    console.warn('Step 3 (price) failed — continuing without price chart:',e);
+    S.currentPrice=null; S.historicalPrices=[];
+    notify('Price data unavailable — enter price manually. Financials loaded OK.','error');
+  }
+
+  // Render
+  try{
+    parseAndRender();
+    hideLoading();
+    notify(name+' loaded from SEC EDGAR ✓','success');
+  }catch(e){
+    hideLoading();
+    console.error('Render failed:',e);
+    notify('Data loaded but render failed: '+e.message,'error');
+  }
+}
+function quickLoad(t){document.getElementById('tickerInput').value=t;loadTicker()}
+
+// ══════════════════════════════════════════════
+// PARSE & RENDER
+// ══════════════════════════════════════════════
+function parseAndRender(){
+  const f=S.facts;
+  const revRows=getAnnual(f,'RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet','RevenueFromContractWithCustomerIncludingAssessedTax','SalesRevenueGoodsNet');
+  const niRows=getAnnual(f,'NetIncomeLoss','NetIncome');
+  const gpRows=getAnnual(f,'GrossProfit');
+  const opRows=getAnnual(f,'OperatingIncomeLoss');
+  const taxRows=getAnnual(f,'IncomeTaxExpense');
+  const cfoRows=getAnnual(f,'NetCashProvidedByUsedInOperatingActivities');
+  const capexRows=getAnnual(f,'PaymentsToAcquirePropertyPlantAndEquipment','CapitalExpendituresIncurringObligation');
+  const daRows=getAnnual(f,'DepreciationDepletionAndAmortization','DepreciationAndAmortization','Depreciation');
+  const debtRows=getAnnual(f,'LongTermDebt','LongTermDebtNoncurrent');
+  const cashRows=getAnnual(f,'CashAndCashEquivalentsAtCarryingValue','CashCashEquivalentsAndShortTermInvestments');
+  const shareRows=getAnnual(f,'CommonStockSharesOutstanding','EntityCommonStockSharesOutstanding');
+
+  if(!revRows.length){notify('Could not parse revenue data for this ticker','error');return}
+
+  const years=revRows.slice(0,4).map(rv=>{
+    const end=rv.end;
+    const find=rows=>rows.find(r=>r.end===end)?.val??null;
+    const rev=rv.val,ni=find(niRows),gp=find(gpRows),op=find(opRows),tax=find(taxRows);
+    const cfo=find(cfoRows),capex=find(capexRows),da=find(daRows);
+    const fcf=cfo!=null&&capex!=null?cfo-capex:null;
+    return{year:end.substring(0,4),end,rev,ni,gp,op,tax,cfo,capex,da,fcf}
+  });
+
+  S.annualData=years;
+  S.shares=shareRows[0]?.val||null;
+  S.netDebt=(debtRows[0]?.val||0)-(cashRows[0]?.val||0);
+  S.baseRevenue=years[0]?.rev||0;
+
+  // Auto-fill DCF assumptions
+  if(years.length>=2&&years[0].rev&&years[1].rev){
+    const g=Math.round(((years[0].rev/years[1].rev)-1)*100);
+    const cap=Math.min(Math.max(g,1),40);
+    [1,2,3,4,5].forEach((i,idx)=>document.getElementById('g'+i).value=Math.max(cap-(idx*2),1))
+  }
+  if(years[0]?.op&&years[0]?.rev)document.getElementById('ebitMargin').value=Math.max(Math.round((years[0].op/years[0].rev)*100),1);
+  if(years[0]?.tax&&years[0]?.op&&years[0].op>0){const tr=Math.round((years[0].tax/years[0].op)*100);if(tr>5&&tr<50)document.getElementById('taxRate').value=tr}
+  if(years[0]?.da&&years[0]?.rev){const p=Math.round((years[0].da/years[0].rev)*100);if(p>0&&p<30)document.getElementById('daPercent').value=p}
+  if(years[0]?.capex&&years[0]?.rev){const p=Math.round((years[0].capex/years[0].rev)*100);if(p>0&&p<30)document.getElementById('capexPercent').value=p}
+
+  if(S.currentPrice){document.getElementById('currentPriceInput').value=S.currentPrice.toFixed(2);document.getElementById('currentPriceDisplay').textContent=fmt(S.currentPrice,'$')}
+
+  renderHeader(years);
+  renderFundamentals(years);
+  if(S.historicalPrices.length>50)renderTechnical();
+  document.getElementById('dcf-empty').style.display='none';
+  document.getElementById('dcf-content').style.display='block'
+}
+
+function renderHeader(years){
+  const y0=years[0]||{};
+  document.getElementById('companyHeader').classList.add('visible');
+  document.getElementById('companyName').textContent=S.entityName;
+  document.getElementById('companyTicker').textContent=S.ticker;
+  document.getElementById('companyMeta').textContent=`SEC EDGAR · CIK ${parseInt(S.cik)} · ${years.length} annual 10-Ks loaded`;
+  document.getElementById('hRevenue').textContent=fmtBig(y0.rev);
+  document.getElementById('hNetIncome').textContent=fmtBig(y0.ni);
+  document.getElementById('hFCF').textContent=fmtBig(y0.fcf);
+  document.getElementById('hNetDebt').textContent=fmtBig(S.netDebt);
+  document.getElementById('hShares').textContent=S.shares?fmtBig(S.shares):'—';
+}
+
+// ══════════════════════════════════════════════
+// DCF ENGINE
+// ══════════════════════════════════════════════
+function runDCF(){
+  if(!S.baseRevenue){notify('Load a ticker first','error');return}
+  const price=parseFloat(document.getElementById('currentPriceInput').value);
+  if(!price||isNaN(price)){notify('Enter the current market price','error');return}
+  S.currentPrice=price;
+  const g=[1,2,3,4,5].map(i=>parseFloat(document.getElementById('g'+i).value)/100);
+  const tg=parseFloat(document.getElementById('tg').value)/100;
+  const ebitM=parseFloat(document.getElementById('ebitMargin').value)/100;
+  const tax=parseFloat(document.getElementById('taxRate').value)/100;
+  const da=parseFloat(document.getElementById('daPercent').value)/100;
+  const capex=parseFloat(document.getElementById('capexPercent').value)/100;
+  const nwc=parseFloat(document.getElementById('nwcPercent').value)/100;
+  const wacc=parseFloat(document.getElementById('wacc').value)/100;
+  let rev=S.baseRevenue;const yrs=[];
+  for(let i=0;i<5;i++){
+    rev*=(1+g[i]);
+    const ebit=rev*ebitM,nopat=ebit*(1-tax),fcff=nopat+(rev*da)-(rev*capex)-(rev*nwc),pv=fcff/Math.pow(1+wacc,i+1);
+    yrs.push({year:`Y${i+1}`,revenue:rev,ebit,fcff,pv})
+  }
+  const lastFCF=yrs[4].fcff;
+  const tv=(lastFCF*(1+tg))/(wacc-tg);
+  const pvTV=tv/Math.pow(1+wacc,5);
+  const pvFCFF=yrs.reduce((s,y)=>s+y.pv,0);
+  const ev=pvFCFF+pvTV,equity=ev-S.netDebt;
+  const intrinsic=S.shares?equity/S.shares:null;
+  if(!intrinsic||isNaN(intrinsic)||!isFinite(intrinsic)){notify('Cannot compute — shares outstanding missing from EDGAR','error');return}
+  const upside=((intrinsic-price)/price)*100;
+  document.getElementById('dcfPrice').textContent=fmt(intrinsic,'$');
+  document.getElementById('dcfPrice').className='dcf-price '+(upside>=0?'undervalued':'overvalued');
+  document.getElementById('dcfUpside').textContent=`${upside>=0?'+':''}${upside.toFixed(1)}% vs current price of ${fmt(price,'$')}`;
+  document.getElementById('dcfUpside').className='dcf-upside '+(upside>=0?'pos':'neg');
+  const mEl=document.getElementById('dcfMargin');
+  if(upside>20){mEl.textContent='✓ Significant Margin of Safety';mEl.style.cssText='background:rgba(0,212,170,0.1);color:var(--accent)'}
+  else if(upside>0){mEl.textContent='◎ Modest Margin of Safety';mEl.style.cssText='background:rgba(245,166,35,0.1);color:var(--gold)'}
+  else{mEl.textContent='✕ Overvalued at Current Price';mEl.style.cssText='background:rgba(255,59,92,0.1);color:var(--red)'}
+  document.getElementById('dcfTableBody').innerHTML=yrs.map(y=>`<tr><td>${y.year}</td><td>${fmtBig(y.revenue)}</td><td>${fmtBig(y.ebit)}</td><td>${fmtBig(y.fcff)}</td><td>${fmtBig(y.pv)}</td></tr>`).join('')+`<tr style="background:var(--bg3)"><td style="font-weight:700">Terminal Value</td><td>—</td><td>—</td><td>${fmtBig(tv)}</td><td style="color:var(--gold)">${fmtBig(pvTV)}</td></tr><tr style="background:var(--bg3)"><td style="font-weight:700;color:var(--accent)">Enterprise Value</td><td colspan="3">—</td><td style="color:var(--accent);font-weight:700">${fmtBig(ev)}</td></tr>`;
+  if(fcfC)fcfC.destroy();
+  fcfC=new Chart(document.getElementById('fcfChart'),{type:'bar',data:{labels:yrs.map(y=>y.year),datasets:[{label:'FCFF',data:yrs.map(y=>y.fcff/1e9),backgroundColor:'rgba(0,212,170,0.3)',borderColor:'var(--accent)',borderWidth:2,borderRadius:6},{label:'PV(FCFF)',data:yrs.map(y=>y.pv/1e9),backgroundColor:'rgba(59,130,246,0.2)',borderColor:'var(--blue)',borderWidth:2,borderRadius:6}]},options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:'#6e7f9c',font:{family:'Outfit',size:11},boxWidth:12,boxHeight:12}}}}});
+  renderSens(wacc,tg,yrs,lastFCF);
+  document.getElementById('aiPanel').style.display='block';
+  runAIAnalysis(yrs,intrinsic,upside,wacc,tg,price)
+}
+
+function renderSens(bw,btg,yrs,lastFCF){
+  const wr=[-0.02,-0.01,0,0.01,0.02].map(d=>bw+d);
+  const tr=[-0.01,-0.005,0,0.005,0.01].map(d=>btg+d);
+  let h='<table class="sens-table"><thead><tr><th>WACC \\ TG</th>';
+  tr.forEach(t=>{h+=`<th>${(t*100).toFixed(1)}%</th>`});h+='</tr></thead><tbody>';
+  wr.forEach(w=>{
+    h+=`<tr><th>${(w*100).toFixed(1)}%</th>`;
+    tr.forEach(t=>{
+      if(w<=t){h+='<td style="color:var(--text3)">N/A</td>';return}
+      const tv2=(lastFCF*(1+t))/(w-t),pvT2=tv2/Math.pow(1+w,5),pvS2=yrs.reduce((s,y,i)=>s+y.fcff/Math.pow(1+w,i+1),0),eq2=(pvS2+pvT2)-S.netDebt,p2=eq2/S.shares,up2=((p2-S.currentPrice)/S.currentPrice)*100;
+      h+=`<td class="${up2>15?'sens-cell-high':up2>-5?'sens-cell-mid':'sens-cell-low'}">${fmt(p2,'$')}</td>`
+    });h+='</tr>'
+  });h+='</tbody></table>';
+  document.getElementById('sensTableWrap').innerHTML=h
+}
+
+// ══════════════════════════════════════════════
+// AI ANALYSIS
+// ══════════════════════════════════════════════
+async function runAIAnalysis(yrs,intrinsic,upside,wacc,tg,price){
+  const el=document.getElementById('aiContent');
+  el.innerHTML=`<div class="ai-loading"><div class="ai-spinner"></div><span>LXI is analyzing ${S.ticker} using SEC 10-K data...</span></div>`;
+  const y0=S.annualData?.[0]||{};
+  const rev=y0.rev,ni=y0.ni,fcf=y0.fcf;
+  const gm=rev&&y0.gp?((y0.gp/rev)*100).toFixed(1)+'%':'—';
+  const om=rev&&y0.op?((y0.op/rev)*100).toFixed(1)+'%':'—';
+  const nm=rev&&ni?((ni/rev)*100).toFixed(1)+'%':'—';
+  const prompt=`You are a senior equity research analyst. Provide sharp, insightful analysis in exactly 3 paragraphs. No bullet points. Write like a sell-side analyst.
+
+Company: ${S.entityName} (${S.ticker})
+Data Source: SEC EDGAR 10-K Filings (government source)
+
+Current Price: ${fmt(price,'$')}
+DCF Intrinsic Value: ${fmt(intrinsic,'$')}
+Upside/Downside: ${upside?.toFixed(1)}%
+WACC Used: ${((wacc||0)*100).toFixed(1)}%
+Terminal Growth: ${((tg||0)*100).toFixed(1)}%
+
+Latest Annual Financials:
+Revenue: ${fmtBig(rev)} | Net Income: ${fmtBig(ni)} | FCF: ${fmtBig(fcf)}
+Gross Margin: ${gm} | Op Margin: ${om} | Net Margin: ${nm}
+
+Para 1: DCF credibility — is this intrinsic value believable? Which assumptions carry the most risk?
+Para 2: Business quality — competitive moat, earnings quality, key risks specific to this company.
+Para 3: Investor takeaway — what matters most going forward. Be direct.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'Analysis unavailable.';
+    el.innerHTML=text.split('\n\n').filter(Boolean).map(p=>`<p>${p}</p>`).join('')
+  }catch(e){el.innerHTML='<p style="color:var(--text2)">AI analysis unavailable.</p>'}
+}
+
+// ══════════════════════════════════════════════
+// FUNDAMENTALS
+// ══════════════════════════════════════════════
+function renderFundamentals(years){
+  document.getElementById('fund-empty').style.display='none';
+  document.getElementById('fund-content').style.display='block';
+  const y0=years[0]||{};
+  document.getElementById('fRevenue').textContent=fmtBig(y0.rev);
+  const rg=years[1]?.rev>0?((y0.rev/years[1].rev-1)*100).toFixed(1):null;
+  document.getElementById('fRevGrowth').textContent=rg?`YoY: ${rg>0?'+':''}${rg}%`:'';
+  document.getElementById('fNetIncome').textContent=fmtBig(y0.ni);
+  const nm=y0.rev>0?((y0.ni/y0.rev)*100).toFixed(1):null;
+  document.getElementById('fNetMargin').textContent=nm?`Net Margin: ${nm}%`:'';
+  document.getElementById('fFCF').textContent=fmtBig(y0.fcf);
+  const mktCap=S.currentPrice&&S.shares?S.currentPrice*S.shares:null;
+  document.getElementById('fFCFYield').textContent=mktCap&&y0.fcf?`FCF Yield: ${((y0.fcf/mktCap)*100).toFixed(1)}%`:'';
+  const gm=y0.rev>0&&y0.gp?((y0.gp/y0.rev)*100).toFixed(1):null;
+  document.getElementById('fGM').textContent=gm?gm+'%':'—';
+  const om=y0.rev>0&&y0.op?((y0.op/y0.rev)*100).toFixed(1):null;
+  document.getElementById('fOM').textContent=om?`Op. Margin: ${om}%`:'';
+  const pe=mktCap&&y0.ni&&y0.ni>0?(mktCap/y0.ni).toFixed(1):null;
+  const ps=mktCap&&y0.rev&&y0.rev>0?(mktCap/y0.rev).toFixed(2):null;
+  document.getElementById('valRatios').innerHTML=[
+    {n:'P/E Ratio',v:pe?pe+'x':'—',b:'S&P 500 avg ~22x'},
+    {n:'P/S Ratio',v:ps?ps+'x':'—',b:'Varies by sector'},
+    {n:'Market Cap',v:mktCap?fmtBig(mktCap):'—',b:'Price × Shares'},
+    {n:'FCF Yield',v:mktCap&&y0.fcf?((y0.fcf/mktCap)*100).toFixed(1)+'%':'—',b:'Higher = better'},
+    {n:'Net Debt',v:fmtBig(S.netDebt),b:'Debt − Cash'},
+    {n:'Rev YoY',v:rg?rg+'%':'—',b:'Top line growth'},
+  ].map(r=>`<div class="ratio-item"><div class="ratio-name">${r.n}</div><div class="ratio-val">${r.v}</div><div class="ratio-bench">${r.b}</div></div>`).join('');
+  document.getElementById('marginRatios').innerHTML=[
+    {n:'Gross Margin',v:gm?gm+'%':'—',b:'Pricing power'},
+    {n:'Op. Margin',v:om?om+'%':'—',b:'Operating efficiency'},
+    {n:'Net Margin',v:nm?nm+'%':'—',b:'Bottom line quality'},
+    {n:'Gross Profit',v:fmtBig(y0.gp),b:'Latest 10-K'},
+    {n:'Op. Income',v:fmtBig(y0.op),b:'Latest 10-K'},
+    {n:'Free Cash Flow',v:fmtBig(y0.fcf),b:'CFO − CapEx'},
+  ].map(r=>`<div class="ratio-item"><div class="ratio-name">${r.n}</div><div class="ratio-val">${r.v}</div><div class="ratio-bench">${r.b}</div></div>`).join('');
+  ['yr1h','yr2h','yr3h','yr4h'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=years[i]?.year||'—'});
+  document.getElementById('incomeTableBody').innerHTML=[
+    {l:'Revenue',k:'rev'},{l:'Gross Profit',k:'gp'},{l:'Operating Income',k:'op'},{l:'Net Income',k:'ni'},
+    {l:'Operating Cash Flow',k:'cfo'},{l:'CapEx',k:'capex'},{l:'Free Cash Flow',k:'fcf'}
+  ].map(r=>`<tr><td>${r.l}</td>${years.slice(0,4).map(y=>`<td>${fmtBig(y[r.k])}</td>`).join('')}</tr>`).join('');
+  if(incC)incC.destroy();
+  const labs=[...years].reverse().map(y=>y.year);
+  incC=new Chart(document.getElementById('incomeChart'),{type:'bar',data:{labels:labs,datasets:[{label:'Revenue ($B)',data:[...years].reverse().map(y=>(y.rev||0)/1e9),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'var(--blue)',borderWidth:2,borderRadius:6},{label:'Net Income ($B)',data:[...years].reverse().map(y=>(y.ni||0)/1e9),backgroundColor:'rgba(0,212,170,0.3)',borderColor:'var(--accent)',borderWidth:2,borderRadius:6}]},options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:'#6e7f9c',font:{family:'Outfit',size:11},boxWidth:12,boxHeight:12}}}}})
+}
+
+// ══════════════════════════════════════════════
+// TECHNICAL
+// ══════════════════════════════════════════════
+function renderTechnical(){
+  document.getElementById('tech-empty').style.display='none';
+  document.getElementById('tech-content').style.display='block';
+  const hist=[...S.historicalPrices].sort((a,b)=>a.date.localeCompare(b.date));
+  const prices=hist.map(h=>h.close),labels=hist.map(h=>h.date);
+  const ma50=prices.map((_,i)=>i>=49?avg(prices.slice(i-49,i+1)):null);
+  const ma200=prices.map((_,i)=>i>=199?avg(prices.slice(i-199,i+1)):null);
+  const rsiData=calcRSI(prices,14);
+  const curr=prices[prices.length-1];
+  const m50=ma50.filter(Boolean).pop()||curr;
+  const m200=ma200.filter(Boolean).pop()||curr;
+  const rsi=rsiData.filter(v=>v!==null).pop();
+  document.getElementById('tPrice').textContent=fmt(curr,'$');
+  document.getElementById('t50ma').textContent=fmt(m50,'$');
+  document.getElementById('t50maStatus').textContent=curr>m50?'▲ Above 50MA':'▼ Below 50MA';
+  document.getElementById('t50maStatus').style.color=curr>m50?'var(--accent)':'var(--red)';
+  document.getElementById('t200ma').textContent=fmt(m200,'$');
+  document.getElementById('t200maStatus').textContent=curr>m200?'▲ Above 200MA':'▼ Below 200MA';
+  document.getElementById('t200maStatus').style.color=curr>m200?'var(--accent)':'var(--red)';
+  document.getElementById('tRSI').textContent=rsi?rsi.toFixed(1):'—';
+  const rs=rsi>70?'Overbought (>70)':rsi<30?'Oversold (<30)':'Neutral';
+  document.getElementById('tRSIStatus').textContent=rs;
+  document.getElementById('tRSIStatus').style.color=rsi>70?'var(--red)':rsi<30?'var(--accent)':'var(--text2)';
+  if(priceC)priceC.destroy();
+  priceC=new Chart(document.getElementById('priceChart'),{type:'line',data:{labels,datasets:[{data:prices,borderColor:'var(--accent)',borderWidth:2,pointRadius:0,tension:0.1,fill:false},{data:ma50,borderColor:'rgba(59,130,246,0.8)',borderWidth:1.5,pointRadius:0,borderDash:[4,4],tension:0.1,fill:false},{data:ma200,borderColor:'rgba(245,166,35,0.8)',borderWidth:1.5,pointRadius:0,borderDash:[6,4],tension:0.1,fill:false}]},options:{...CD,plugins:{...CD.plugins,legend:{display:false}}}});
+  if(rsiC)rsiC.destroy();
+  rsiC=new Chart(document.getElementById('rsiChart'),{type:'line',data:{labels,datasets:[{data:rsiData,borderColor:'rgba(59,130,246,0.8)',borderWidth:1.5,pointRadius:0,tension:0.1,fill:false}]},options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,min:0,max:100,ticks:{...CD.scales.y.ticks,callback:v=>v+''}}}}})
+}
+function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
+function calcRSI(prices,period){
+  const result=new Array(prices.length).fill(null);
+  const ch=prices.slice(1).map((p,i)=>p-prices[i]);
+  for(let i=period;i<prices.length;i++){
+    const sl=ch.slice(i-period,i);
+    const ag=sl.filter(c=>c>0).reduce((a,b)=>a+b,0)/period;
+    const al=sl.filter(c=>c<0).map(Math.abs).reduce((a,b)=>a+b,0)/period;
+    if(!al){result[i]=100;continue}result[i]=100-(100/(1+ag/al))
+  }
+  return result
+}
+
+// ══════════════════════════════════════════════
+// TVM
+// ══════════════════════════════════════════════
+let tvmSolving=null;
+function setSolve(f){tvmSolving=f;document.querySelectorAll('.tvm-field').forEach(e=>e.classList.remove('solving'));document.getElementById('field-'+f).classList.add('solving');document.getElementById('inp-'+f).value=''}
+function clearSolveIfInput(f){if(tvmSolving===f){tvmSolving=null;document.getElementById('field-'+f).classList.remove('solving')}}
+function solveTVM(){
+  const get=id=>{const v=document.getElementById('inp-'+id).value;return v===''?null:parseFloat(v)};
+  let n=get('n'),iy=get('iy'),pv=get('pv'),pmt=get('pmt'),fv=get('fv');
+  if(!tvmSolving){notify('Click a field to mark it as the unknown','error');return}
+  const r=iy!==null?iy/100:null;
+  try{
+    let result=null,label='',desc='';
+    if(tvmSolving==='fv'){if(n===null||iy===null||pv===null||pmt===null){notify('Fill in N, I/Y, PV, PMT','error');return}result=-(pv*Math.pow(1+r,n)+pmt*((Math.pow(1+r,n)-1)/r));label='Future Value (FV)';desc=`Value after ${n} periods at ${iy}%/period`}
+    else if(tvmSolving==='pv'){if(n===null||iy===null||pmt===null||fv===null){notify('Fill in N, I/Y, PMT, FV','error');return}result=-(pmt*((1-Math.pow(1+r,-n))/r)+fv*Math.pow(1+r,-n));label='Present Value (PV)';desc='What you need today'}
+    else if(tvmSolving==='pmt'){if(n===null||iy===null||pv===null||fv===null){notify('Fill in N, I/Y, PV, FV','error');return}result=-(fv+pv*Math.pow(1+r,n))/((Math.pow(1+r,n)-1)/r);label='Payment (PMT)';desc='Required periodic payment'}
+    else if(tvmSolving==='n'){if(iy===null||pv===null||fv===null){notify('Fill in I/Y, PV, FV','error');return}result=pmt?Math.log((-fv*r/pmt+1)/(pv*r/pmt+1))/Math.log(1+r):Math.log(fv/pv)/Math.log(1+r);label='Periods (N)';desc='Time to reach goal'}
+    else if(tvmSolving==='iy'){
+      if(n===null||pv===null||fv===null){notify('Fill in N, PV, FV','error');return}
+      if(!pmt){result=(Math.pow(fv/pv,1/n)-1)*100}
+      else{let rate=0.1;for(let i=0;i<1000;i++){const f2=pv*Math.pow(1+rate,n)+pmt*((Math.pow(1+rate,n)-1)/rate)+fv,df=pv*n*Math.pow(1+rate,n-1)+pmt*(n*Math.pow(1+rate,n-1)/rate-(Math.pow(1+rate,n)-1)/(rate*rate)),r2=rate-f2/df;if(Math.abs(r2-rate)<1e-8){rate=r2;break}rate=r2}result=rate*100}
+      label='Interest Rate (I/Y)';desc='Rate per period'
+    }
+    if(result===null||isNaN(result)||!isFinite(result)){notify('Cannot solve — check inputs','error');return}
+    document.getElementById('inp-'+tvmSolving).value=result.toFixed(4);
+    document.getElementById('tvmResultBar').classList.add('visible');
+    document.getElementById('tvmResultLabel').textContent=label;
+    document.getElementById('tvmResultDesc').textContent=desc;
+    document.getElementById('tvmResultVal').textContent=tvmSolving==='iy'?result.toFixed(2)+'%':tvmSolving==='n'?result.toFixed(2)+' periods':fmt(result,'$');
+    tvmAI(tvmSolving,result,n,iy,pv,pmt,fv)
+  }catch(e){notify('Calculation error','error')}
+}
+async function tvmAI(solving,result,n,iy,pv,pmt,fv){
+  const el=document.getElementById('tvmAiContent');
+  el.innerHTML=`<div class="ai-loading"><div class="ai-spinner"></div><span>Interpreting result...</span></div>`;
+  const prompt=`You are a financial advisor. Explain this TVM result in 2-3 concise paragraphs. Be practical.
+Solving for: ${solving.toUpperCase()} | N: ${n??'N/A'} | I/Y: ${iy??'N/A'}% | PV: ${pv!=null?'$'+pv.toFixed(2):'N/A'} | PMT: ${pmt!=null?'$'+pmt.toFixed(2):'N/A'} | FV: ${fv!=null?'$'+fv.toFixed(2):'N/A'}
+Result: ${result.toFixed(4)} ${solving==='iy'?'%':solving==='n'?'periods':'$'}
+What does this mean for the investor? Key caveats? Practical implications?`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    el.innerHTML=(data.content?.[0]?.text||'').split('\n\n').filter(Boolean).map(p=>`<p>${p}</p>`).join('')
+  }catch(e){el.innerHTML='<p style="color:var(--text2)">AI explanation unavailable.</p>'}
+}
+function clearTVM(){['n','iy','pv','pmt','fv'].forEach(k=>{document.getElementById('inp-'+k).value='';document.getElementById('field-'+k).classList.remove('solving')});tvmSolving=null;document.getElementById('tvmResultBar').classList.remove('visible');document.getElementById('tvmAiContent').textContent='Run a calculation above and LXI will explain the result.'}
+function loadTemplate(name){
+  clearTVM();
+  const t={loan:{n:60,iy:6/12,pv:35000,pmt:null,fv:0,s:'pmt'},mortgage:{n:360,iy:7/12,pv:400000,pmt:null,fv:0,s:'pmt'},retirement:{n:480,iy:7/12,pv:-10000,pmt:-500,fv:null,s:'fv'},college:{n:216,iy:6/12,pv:0,pmt:null,fv:200000,s:'pmt'},bond:{n:20,iy:5,pv:null,pmt:40,fv:1000,s:'pv'},lumpsum:{n:10,iy:8,pv:-50000,pmt:0,fv:null,s:'fv'}}[name];
+  if(!t)return;
+  if(t.n!=null)document.getElementById('inp-n').value=t.n;
+  if(t.iy!=null)document.getElementById('inp-iy').value=t.iy;
+  if(t.pv!=null)document.getElementById('inp-pv').value=t.pv;
+  if(t.pmt!=null)document.getElementById('inp-pmt').value=t.pmt;
+  if(t.fv!=null)document.getElementById('inp-fv').value=t.fv;
+  setSolve(t.s)
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function fmt(v,p=''){if(v==null||isNaN(v))return'—';return p+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtBig(v){if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e12)return s+'$'+(a/1e12).toFixed(2)+'T';if(a>=1e9)return s+'$'+(a/1e9).toFixed(2)+'B';if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(2)+'K';return s+'$'+a.toFixed(2)}
+function notify(msg,type='success'){const el=document.getElementById('notif');el.textContent=msg;el.className=`notif ${type} show`;setTimeout(()=>el.classList.remove('show'),3500)}
+function showLoading(msg,step){document.getElementById('loadingOverlay').classList.add('open');document.getElementById('loadingMsg').textContent=msg;document.getElementById('loadingStep').textContent=step}
+function setLoadStep(msg,step){document.getElementById('loadingMsg').textContent=msg;document.getElementById('loadingStep').textContent=step}
+function hideLoading(){document.getElementById('loadingOverlay').classList.remove('open')}
+
+document.getElementById('tickerInput').addEventListener('keydown',e=>{if(e.key==='Enter')loadTicker()});
+</script>
+</body>
+</html>
