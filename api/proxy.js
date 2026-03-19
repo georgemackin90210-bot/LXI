@@ -1,59 +1,59 @@
 // api/proxy.js
-// Vercel serverless function — proxies SEC EDGAR and Yahoo Finance requests
-// Runs server-side so there are zero CORS issues
+// Vercel serverless function — proxies SEC EDGAR + Yahoo Finance
+// Uses CommonJS syntax for maximum Vercel compatibility
 
-export default async function handler(req, res) {
-  // Allow browser requests
+const https = require('https');
+const http = require('http');
+
+const ALLOWED_DOMAINS = [
+  'sec.gov',
+  'finance.yahoo.com',
+  'query1.finance.yahoo.com',
+  'query2.finance.yahoo.com',
+];
+
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https') ? https : http;
+    const req = client.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; LXI/1.0)',
+        'Accept': 'application/json, */*',
+      }
+    }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchUrl(res.headers.location).then(resolve).catch(reject);
+      }
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve({ status: res.statusCode, data, contentType: res.headers['content-type'] || 'application/json' }));
+    });
+    req.on('error', reject);
+    req.setTimeout(25000, () => { req.destroy(); reject(new Error('Request timed out')); });
+  });
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
-  const { url } = req.query;
+  const url = req.query.url;
+  if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
-  if (!url) {
-    res.status(400).json({ error: 'Missing url parameter' });
-    return;
-  }
-
-  // Security whitelist — only allow these domains
-  const allowed = [
-    'sec.gov',
-    'finance.yahoo.com',
-    'query1.finance.yahoo.com',
-    'query2.finance.yahoo.com',
-  ];
-
-  const isAllowed = allowed.some(domain => url.includes(domain));
-  if (!isAllowed) {
-    res.status(403).json({ error: `Domain not permitted: ${url}` });
-    return;
-  }
+  const allowed = ALLOWED_DOMAINS.some(d => url.includes(d));
+  if (!allowed) return res.status(403).json({ error: 'Domain not permitted' });
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ARGUS/1.0)',
-        'Accept': 'application/json, */*',
-      },
-    });
-
-    if (!response.ok) {
-      res.status(response.status).json({ error: `Upstream returned ${response.status}` });
-      return;
-    }
-
-    const contentType = response.headers.get('content-type') || 'application/json';
-    const data = await response.text();
-
+    console.log('Proxying: ' + url.substring(0, 100));
+    const { status, data, contentType } = await fetchUrl(url);
     res.setHeader('Content-Type', contentType);
-    res.status(200).send(data);
-
+    return res.status(status).send(data);
   } catch (err) {
-    console.error('Proxy error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Proxy error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
-}
+};
